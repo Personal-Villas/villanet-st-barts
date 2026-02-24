@@ -1,0 +1,68 @@
+@font-face {
+  font-family: 'Helvetica Now Text';
+  src: url('/fonts/helveticanowtext-bold-demo.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica Now Text';
+  src: url('/fonts/helveticanowtext-bolditalic-demo.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica Now Text';
+  src: url('/fonts/helveticanowtext-black-demo.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica Now Text';
+  src: url('/fonts/helveticanowtext-blackitalic-demo.ttf') format('truetype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #111111;
+    --card: #ffffff;
+    --border: #e5e5e5;
+    --muted: #f5f5f5;
+    --muted-foreground: #737373;
+    --primary: #111111;
+    --accent: #f5f5f5;
+    --accent-foreground: #111111;
+    --ring: #111111;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Helvetica Now Text', 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .bg-background  { background-color: var(--background); }
+  .bg-card        { background-color: var(--card); }
+  .bg-muted       { background-color: var(--muted); }
+  .bg-accent      { background-color: var(--accent); }
+  .text-foreground      { color: var(--foreground); }
+  .text-muted-foreground{ color: var(--muted-foreground); }
+  .text-accent-foreground { color: var(--accent-foreground); }
+  .border-border  { border-color: var(--border); }
+  .ring-ring      { --tw-ring-color: var(--ring); }
+}
