@@ -53,27 +53,29 @@ export function Detail() {
   const nextImg = useCallback(() => setImgIdx(i => (i + 1) % images.length), [images.length])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+
+    // 1. Validaciones previas
     if (!name || !email || !message) {
-      setFormError('Please fill in all required fields.')
-      return
+      setFormError('Please fill in all required fields.');
+      return;
     }
 
-    setSending(true)
-    setFormError(null)
+    setSending(true);
+    setFormError(null);
 
     try {
-      // 2. Ejecuta el captcha y obtén el token de forma asíncrona
-      const token = await recaptchaRef.current?.executeAsync()
+      // 2. Obtener el token (Invisible)
+      // Importante: resetear antes de ejecutar por si hubo un intento previo
+      recaptchaRef.current?.reset();
+      const token = await recaptchaRef.current?.executeAsync();
 
       if (!token) {
-        setFormError('reCAPTCHA verification failed. Please try again.')
-        setSending(false)
-        return
+        throw new Error('reCAPTCHA token could not be generated.');
       }
 
-      // 3. Envía el token al backend
-      await publicApi.post('/public/property-messages', {
+      // 3. Enviar al backend
+      const payload = {
         listingId: id,
         name,
         email,
@@ -81,15 +83,22 @@ export function Detail() {
         checkIn,
         checkOut,
         guests,
-        recaptchaToken: token,
-      })
-      setSent(true)
-    } catch (err) {
-      setFormError('Could not send your message. Please try again.')
+        recaptchaToken: token, // Asegúrate de que el nombre coincide con lo que el backend espera
+      };
+
+      await publicApi.post('/public/property-messages', payload);
+
+      setSent(true);
+    } catch (err: any) {
+      console.error("Error sending message:", err);
+      // Extraemos el mensaje de error del backend si existe
+      const backendMessage = err.response?.data?.error || 'Could not send your message. Please try again.';
+      setFormError(backendMessage);
     } finally {
-      setSending(false)
+      // 4. Esto asegura que el botón SIEMPRE vuelva a su estado normal si falla
+      setSending(false);
     }
-  }
+  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
