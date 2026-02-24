@@ -7,6 +7,7 @@ import {
   Heart, Bed, Bath, Users, MapPin, ChevronLeft, ChevronRight,
   ArrowLeft, DollarSign, Shield
 } from 'lucide-react'
+import { getRecaptchaToken } from '../services/reCaptcha.service'
 
 function formatMoney(n: number | null | undefined) {
   if (n == null || isNaN(Number(n))) return '—'
@@ -52,16 +53,35 @@ export function Detail() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name || !email || !message) { setFormError('Please fill in all required fields.'); return }
+    if (!name || !email || !message) { 
+      setFormError('Please fill in all required fields.')
+      return 
+    }
+    
     setSending(true)
     setFormError(null)
+    
     try {
+      // 2. Obtener el token ANTES de enviar los datos
+      const token = await getRecaptchaToken('inquiry_form')
+      
+      if (!token) {
+        throw new Error('Verification failed')
+      }
+
+      // 3. Incluir recaptchaToken en el payload para el backend
       await publicApi.post('/public/property-messages', {
         listingId: id,
-        name, email, message, checkIn, checkOut, guests,
+        name, 
+        email, 
+        message, 
+        checkIn, 
+        checkOut, 
+        guests,
+        recaptchaToken: token 
       })
       setSent(true)
-    } catch {
+    } catch (err) {
       setFormError('Could not send your message. Please try again.')
     } finally {
       setSending(false)
