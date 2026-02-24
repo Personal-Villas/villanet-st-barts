@@ -7,7 +7,7 @@ import {
   Heart, Bed, Bath, Users, MapPin, ChevronLeft, ChevronRight,
   ArrowLeft, DollarSign, Shield
 } from 'lucide-react'
-import { getRecaptchaToken } from '../services/reCaptcha.service'
+import ReCAPTCHA from 'react-google-recaptcha'
 
 function formatMoney(n: number | null | undefined) {
   if (n == null || isNaN(Number(n))) return '—'
@@ -25,15 +25,16 @@ export function Detail() {
   const [imgIdx, setImgIdx] = useState(0)
 
   // Inquiry form
-  const [name, setName]       = useState('')
-  const [email, setEmail]     = useState('')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
-  const [guests, setGuests]   = useState('')
+  const [guests, setGuests] = useState('')
   const [sending, setSending] = useState(false)
-  const [sent, setSent]       = useState(false)
+  const [sent, setSent] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -53,35 +54,34 @@ export function Detail() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name || !email || !message) { 
-      setFormError('Please fill in all required fields.')
-      return 
+
+    // Validar que el captcha esté resuelto
+    if (!recaptchaToken) {
+      setFormError('Please verify that you are not a robot.')
+      return
     }
-    
+
+    if (!name || !email || !message) {
+      setFormError('Please fill in all required fields.')
+      return
+    }
+
     setSending(true)
     setFormError(null)
-    
-    try {
-      // 2. Obtener el token ANTES de enviar los datos
-      const token = await getRecaptchaToken('inquiry_form')
-      
-      if (!token) {
-        throw new Error('Verification failed')
-      }
 
-      // 3. Incluir recaptchaToken en el payload para el backend
+    try {
       await publicApi.post('/public/property-messages', {
         listingId: id,
-        name, 
-        email, 
-        message, 
-        checkIn, 
-        checkOut, 
+        name,
+        email,
+        message,
+        checkIn,
+        checkOut,
         guests,
-        recaptchaToken: token 
+        recaptchaToken, // Enviamos el token del estado
       })
       setSent(true)
-    } catch (err) {
+    } catch {
       setFormError('Could not send your message. Please try again.')
     } finally {
       setSending(false)
@@ -239,6 +239,12 @@ export function Detail() {
                   <textarea required value={message} onChange={e => setMessage(e.target.value)} placeholder="Your message *" rows={4} maxLength={1000}
                     className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-900 resize-none" />
 
+                  <div className="py-2 flex justify-center">
+                    <ReCAPTCHA
+                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''}
+                      onChange={(val) => setRecaptchaToken(val)}
+                    />
+                  </div>
                   {formError && <p className="text-xs text-red-500">{formError}</p>}
 
                   <button type="submit" disabled={sending}
