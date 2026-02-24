@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { publicApi } from '../api/api'
 import { useFavorites } from '../context/FavoritesContext'
@@ -34,7 +34,7 @@ export function Detail() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
+  const recaptchaRef = useRef<ReCAPTCHA>(null) // 1. Crea la referencia
 
   useEffect(() => {
     if (!id) return
@@ -54,13 +54,6 @@ export function Detail() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Validar que el captcha esté resuelto
-    if (!recaptchaToken) {
-      setFormError('Please verify that you are not a robot.')
-      return
-    }
-
     if (!name || !email || !message) {
       setFormError('Please fill in all required fields.')
       return
@@ -70,6 +63,16 @@ export function Detail() {
     setFormError(null)
 
     try {
+      // 2. Ejecuta el captcha y obtén el token de forma asíncrona
+      const token = await recaptchaRef.current?.executeAsync()
+
+      if (!token) {
+        setFormError('reCAPTCHA verification failed. Please try again.')
+        setSending(false)
+        return
+      }
+
+      // 3. Envía el token al backend
       await publicApi.post('/public/property-messages', {
         listingId: id,
         name,
@@ -78,10 +81,10 @@ export function Detail() {
         checkIn,
         checkOut,
         guests,
-        recaptchaToken, // Enviamos el token del estado
+        recaptchaToken: token,
       })
       setSent(true)
-    } catch {
+    } catch (err) {
       setFormError('Could not send your message. Please try again.')
     } finally {
       setSending(false)
@@ -241,8 +244,9 @@ export function Detail() {
 
                   <div className="py-2 flex justify-center">
                     <ReCAPTCHA
+                      ref={recaptchaRef}
+                      size="invisible"
                       sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''}
-                      onChange={(val) => setRecaptchaToken(val)}
                     />
                   </div>
                   {formError && <p className="text-xs text-red-500">{formError}</p>}
