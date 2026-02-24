@@ -31,6 +31,7 @@ export function Detail() {
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
   const [guests, setGuests] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -53,52 +54,29 @@ export function Detail() {
   const nextImg = useCallback(() => setImgIdx(i => (i + 1) % images.length), [images.length])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // 1. Validaciones previas
-    if (!name || !email || !message) {
-      setFormError('Please fill in all required fields.');
-      return;
-    }
-
-    setSending(true);
-    setFormError(null);
-
+    e.preventDefault()
+    if (!name || !email) { setFormError('Name and email are required.'); return }
+    setSending(true)
+    setFormError(null)
     try {
-      // 2. Obtener el token (Invisible)
-      // Importante: resetear antes de ejecutar por si hubo un intento previo
-      recaptchaRef.current?.reset();
-      const token = await recaptchaRef.current?.executeAsync();
-
-      if (!token) {
-        throw new Error('reCAPTCHA token could not be generated.');
-      }
-
-      // 3. Enviar al backend
-      const payload = {
+      await publicApi.post('/api/leads/villa-inquiry', {
         listingId: id,
-        name,
+        listingName: listing?.name,
+        fullName: name,
         email,
-        message,
+        whatsapp,
         checkIn,
         checkOut,
         guests,
-        recaptchaToken: token, // Asegúrate de que el nombre coincide con lo que el backend espera
-      };
-
-      await publicApi.post('/public/property-messages', payload);
-
-      setSent(true);
-    } catch (err: any) {
-      console.error("Error sending message:", err);
-      // Extraemos el mensaje de error del backend si existe
-      const backendMessage = err.response?.data?.error || 'Could not send your message. Please try again.';
-      setFormError(backendMessage);
+        message,
+      })
+      setSent(true)
+    } catch {
+      setFormError('Could not send your inquiry. Please try again.')
     } finally {
-      // 4. Esto asegura que el botón SIEMPRE vuelva a su estado normal si falla
-      setSending(false);
+      setSending(false)
     }
-  };
+  }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -222,14 +200,16 @@ export function Detail() {
                   <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Shield size={20} className="text-green-500" />
                   </div>
-                  <p className="font-semibold text-neutral-900 mb-1">Message sent!</p>
-                  <p className="text-sm text-neutral-400">We'll be in touch soon.</p>
+                  <p className="font-semibold text-neutral-900 mb-1">Inquiry sent!</p>
+                  <p className="text-sm text-neutral-400">We'll be in touch within 24 hours.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <input required value={name} onChange={e => setName(e.target.value)} placeholder="Your name *"
                     className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-900" />
                   <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email *"
+                    className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-900" />
+                  <input type="tel" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="WhatsApp (optional)"
                     className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-900" />
 
                   <div className="grid grid-cols-2 gap-2">
@@ -248,21 +228,14 @@ export function Detail() {
                   <input type="number" min={1} value={guests} onChange={e => setGuests(e.target.value)} placeholder="Number of guests"
                     className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-900" />
 
-                  <textarea required value={message} onChange={e => setMessage(e.target.value)} placeholder="Your message *" rows={4} maxLength={1000}
+                  <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Message (optional)" rows={3} maxLength={1000}
                     className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-900 resize-none" />
 
-                  <div className="py-2 flex justify-center">
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      size="invisible"
-                      sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''}
-                    />
-                  </div>
                   {formError && <p className="text-xs text-red-500">{formError}</p>}
 
                   <button type="submit" disabled={sending}
                     className="w-full py-3 bg-neutral-900 hover:bg-neutral-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-60">
-                    {sending ? 'Sending...' : 'Send inquiry'}
+                    {sending ? 'Sending...' : 'Request Availability'}
                   </button>
                 </form>
               )}

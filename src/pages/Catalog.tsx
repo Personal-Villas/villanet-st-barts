@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useListings } from '../hooks/useListings'
 import { useFavorites } from '../context/FavoritesContext'
-import { Heart, Bed, Bath, DollarSign, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, Bed, Bath, DollarSign, MapPin, ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { SearchBar } from '../components/SearchBar'
 
 const SORT_OPTIONS = [
@@ -187,6 +187,12 @@ export function Catalog() {
                       loading={idx < 4 ? 'eager' : 'lazy'}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
+                    {(item.rank ?? item.villanet_rank) && (
+                      <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-white/95 rounded-full text-[10px] font-bold text-neutral-700 shadow-sm">
+                        <Star size={11} className="text-yellow-500 fill-yellow-500" />
+                        {item.rank ?? item.villanet_rank}
+                      </div>
+                    )}
 
                     {/* Flechas */}
                     {images.length > 1 && <>
